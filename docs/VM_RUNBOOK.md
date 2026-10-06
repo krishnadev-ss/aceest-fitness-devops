@@ -1,8 +1,11 @@
 # Runbook — running the project on a fresh Linux VM
 
 Written for an Ubuntu/Debian lab VM (for example BITS Prayogshala). Run the
-commands in order in the VM's terminal. Replace `<your-username>` with your
-GitHub username.
+commands in order in the VM's terminal.
+
+> The BITS Prayogshala VM (Rocky Linux 9) already ships Git, Python 3.9,
+> Docker, Java 21 and a running Jenkins on port 8080 — skip sections 1 and 5.1
+> there, and work inside `~/workspace`.
 
 ## 0. See what the VM already has
 
@@ -33,7 +36,7 @@ sudo apt-get install -y fontconfig openjdk-21-jre
 
 ```bash
 cd ~
-git clone https://github.com/<your-username>/aceest-fitness-devops.git
+git clone https://github.com/krishnadev-ss/aceest-fitness-devops.git
 cd aceest-fitness-devops
 ```
 
@@ -110,7 +113,7 @@ access: `sudo usermod -aG docker jenkins && sudo systemctl restart jenkins`.)
 2. Under **Pipeline**:
    - Definition: **Pipeline script from SCM**
    - SCM: **Git**
-   - Repository URL: `https://github.com/<your-username>/aceest-fitness-devops.git`
+   - Repository URL: `https://github.com/krishnadev-ss/aceest-fitness-devops.git`
    - Credentials: none (the repository is public)
    - Branch Specifier: `*/main`
    - Script Path: `Jenkinsfile`
@@ -139,5 +142,5 @@ Image Assembly, Automated Testing (in container).
 | `permission denied ... docker.sock` | `sudo usermod -aG docker $USER`, then log out/in (restart Jenkins too) |
 | `ensurepip is not available` | `sudo apt-get install -y python3-venv` |
 | `Address already in use` on 5000 | `docker rm -f aceest` or run with `-p 5001:5000` |
-| Jenkins skips the Docker stage | Docker is not on the PATH of the user running Jenkins |
+| Jenkins skips the Docker stage | The `jenkins` user is not in the `docker` group: `sudo usermod -aG docker jenkins && sudo systemctl restart jenkins` |
 | `docker build` cannot pull `python:3.12-slim` | The VM cannot reach Docker Hub — check the lab's proxy settings |

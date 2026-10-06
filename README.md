@@ -1,6 +1,6 @@
 # ACEest Fitness & Gym — Flask service with automated CI/CD
 
-[![CI/CD Pipeline](https://github.com/<your-username>/aceest-fitness-devops/actions/workflows/main.yml/badge.svg)](https://github.com/<your-username>/aceest-fitness-devops/actions/workflows/main.yml)
+[![CI/CD Pipeline](https://github.com/krishnadev-ss/aceest-fitness-devops/actions/workflows/main.yml/badge.svg)](https://github.com/krishnadev-ss/aceest-fitness-devops/actions/workflows/main.yml)
 
 A small Flask web application for gym management (training programs, calorie
 and BMI calculators, client records and weekly adherence tracking), delivered
@@ -46,10 +46,10 @@ Invalid input returns `400` with `{"error": "..."}`; unknown resources return
 
 ## Local setup and execution
 
-Requirements: Python 3.10+ and Git. Docker is only needed for the container steps.
+Requirements: Python 3.9+ and Git. Docker is only needed for the container steps.
 
 ```bash
-git clone https://github.com/<your-username>/aceest-fitness-devops.git
+git clone https://github.com/krishnadev-ss/aceest-fitness-devops.git
 cd aceest-fitness-devops
 
 python3 -m venv .venv
@@ -142,7 +142,7 @@ the `Jenkinsfile`:
 3. **Compile & Lint** — `py_compile` + `flake8`.
 4. **Unit Tests** — Pytest with a JUnit report and a 90 % coverage gate.
 5. **Docker Build & Test** — builds the image and runs the tests in the
-   container (skipped automatically if the agent has no Docker).
+   container (skipped automatically if the Jenkins user cannot reach the Docker daemon).
 
 The job polls GitHub every five minutes (`pollSCM`), so a push triggers a build
 without needing a publicly reachable webhook. Setup steps are in
