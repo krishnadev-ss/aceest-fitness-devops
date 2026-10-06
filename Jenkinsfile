@@ -1,6 +1,6 @@
 // ACEest Fitness & Gym - Jenkins BUILD & quality gate.
 // Pulls the latest code from GitHub, rebuilds the environment from scratch,
-// then lints, tests and (when Docker is present on the agent) builds the image.
+// then lints, tests and (when the agent has Docker access) builds the image.
 pipeline {
     agent any
 
@@ -65,7 +65,8 @@ pipeline {
 
         stage('Docker Build & Test') {
             when {
-                expression { sh(script: 'command -v docker', returnStatus: true) == 0 }
+                // Run only when this agent can actually talk to the Docker daemon.
+                expression { sh(script: 'docker info > /dev/null 2>&1', returnStatus: true) == 0 }
             }
             steps {
                 sh '''
