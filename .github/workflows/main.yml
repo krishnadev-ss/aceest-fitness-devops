@@ -53,7 +53,15 @@ jobs:
             if curl -fsS http://localhost:5000/health; then exit 0; fi
             sleep 2
           done
-          docker logs aceest
+          echo "Container did not become healthy; logs follow."
+          docker logs aceest 2>&1 | tee container.log
+          # Logs need sign-in on GitHub; the job summary is public.
+          {
+            echo '### Smoke test failed - container log'
+            echo '```'
+            tail -n 80 container.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
           exit 1
 
   test:
