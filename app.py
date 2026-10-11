@@ -19,7 +19,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 # PBKDF2 is available in every Python/OpenSSL build (scrypt is not).
 HASH_METHOD = "pbkdf2:sha256"
 
-APP_VERSION = "2.0.2"
+APP_VERSION = "2.1.0"
 
 # --------------------------------------------------------------------------
 # Domain data (carried over from the baseline ACEest script)
@@ -158,36 +158,202 @@ CLIENT_COLUMNS = (
     "target_adherence, plan, membership_status, membership_end"
 )
 
-INDEX_HTML = """<!doctype html>
+PAGE_HEAD = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<title>ACEest Fitness &amp; Gym</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }} - ACEest Fitness &amp; Gym</title>
 <style>
- body{font-family:Helvetica,Arial,sans-serif;background:#1a1a1a;color:#eee;
-      margin:0}
- header{background:#d4af37;color:#000;padding:20px;text-align:center}
- main{max-width:900px;margin:auto;padding:20px}
- section{border:1px solid #d4af37;border-radius:6px;padding:12px 18px;
-         margin-bottom:16px}
- h2{color:#d4af37;margin-top:4px} code{color:#d4af37}
+ :root{--bg:#141414;--panel:#1f1f1f;--line:#2e2e2e;--gold:#d4af37;
+       --text:#ececec;--muted:#9a9a9a;--ok:#4caf7a;--warn:#e0a03a;--bad:#e05a4f}
+ *{box-sizing:border-box}
+ body{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;
+      background:var(--bg);color:var(--text);margin:0;line-height:1.45}
+ a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
+ header{background:var(--gold);color:#111;padding:14px 24px;display:flex;
+        align-items:baseline;gap:14px;flex-wrap:wrap}
+ header h1{margin:0;font-size:22px} header small{opacity:.75}
+ header nav{margin-left:auto;font-size:14px} header nav a{color:#111;
+        margin-left:16px;font-weight:600}
+ main{max-width:1080px;margin:auto;padding:24px 16px 48px}
+ h2{font-size:15px;text-transform:uppercase;letter-spacing:.06em;
+    color:var(--gold);margin:28px 0 10px}
+ .grid{display:grid;gap:14px} .grid+.grid{margin-top:14px}
+ .tiles{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+ .cards{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+ .panel{background:var(--panel);border:1px solid var(--line);
+        border-radius:8px;padding:14px 16px}
+ .tile .v{font-size:28px;font-weight:700} .tile .k{color:var(--muted);
+        font-size:13px}
+ .panel h3{margin:0 0 6px;font-size:17px} .panel ul{margin:6px 0 0;
+        padding-left:18px} .panel li{margin:2px 0}
+ .muted{color:var(--muted)} .code{font-family:Menlo,Consolas,monospace;
+        font-size:13px}
+ table{width:100%;border-collapse:collapse;font-size:14px}
+ th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+ th{color:var(--muted);font-weight:600;font-size:12px;
+    text-transform:uppercase;letter-spacing:.04em}
+ .badge{display:inline-block;padding:1px 8px;border-radius:10px;
+        font-size:12px;font-weight:600}
+ .Active{background:#1d3a2a;color:var(--ok)}
+ .Paused{background:#3a311d;color:var(--warn)}
+ .Expired{background:#3a1f1d;color:var(--bad)}
+ .bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden;
+      margin-top:6px} .bar span{display:block;height:100%;background:var(--gold)}
+ svg text{fill:var(--muted);font-size:11px}
+ .empty{color:var(--muted);font-style:italic}
 </style></head><body>
-<header><h1>ACEest Functional Fitness</h1><small>v{{ version }}</small></header>
+<header><h1>ACEest Functional Fitness</h1><small>v{{ version }}</small>
+<nav><a href="/">Dashboard</a><a href="/api/export/clients.csv">Export CSV</a>
+<a href="/health">Health</a></nav></header>
 <main>
+"""
+
+PAGE_FOOT = """</main></body></html>"""
+
+INDEX_HTML = PAGE_HEAD + """
+<div class="grid tiles">
+ <div class="panel tile"><div class="v">{{ stats.clients }}</div>
+  <div class="k">Clients</div></div>
+ <div class="panel tile"><div class="v">{{ stats.active }}</div>
+  <div class="k">Active memberships</div></div>
+ <div class="panel tile"><div class="v">{{ stats.workouts }}</div>
+  <div class="k">Workouts logged</div></div>
+ <div class="panel tile"><div class="v">{{ stats.adherence }}</div>
+  <div class="k">Average adherence</div></div>
+ <div class="panel tile"><div class="v">{{ metrics.capacity_users }}</div>
+  <div class="k">Capacity ({{ metrics.area_sqft }} sq ft)</div></div>
+</div>
+
+<h2>Clients</h2>
+{% if clients %}
+<div class="panel"><table>
+ <tr><th>Name</th><th>Program</th><th>Calories</th><th>BMI</th>
+     <th>Plan</th><th>Membership</th></tr>
+ {% for c in clients %}
+ <tr><td><a href="/clients/{{ c.name }}">{{ c.name }}</a></td>
+  <td>{{ programs[c.program].name }}</td><td>{{ c.calories }} kcal</td>
+  <td>{{ c.bmi or "-" }}</td><td>{{ c.plan or "-" }}</td>
+  <td><span class="badge {{ c.membership.status }}">{{ c.membership.status
+   }}</span>{% if c.membership.end %} <span class="muted">until {{
+   c.membership.end }}</span>{% endif %}</td></tr>
+ {% endfor %}
+</table></div>
+{% else %}
+<p class="empty">No clients yet - create one with POST /api/clients.</p>
+{% endif %}
+
+<h2>Programs</h2>
+<div class="grid cards">
 {% for code, p in programs.items() %}
-<section>
- <h2>{{ p.name }} ({{ code }})</h2>
+<section class="panel">
+ <h3>{{ p.name }} <span class="muted">({{ code }})</span></h3>
+ <div class="muted">{{ p.calorie_factor }} kcal per kg body weight</div>
  <b>Weekly workout</b><ul>{% for w in p.workout %}<li>{{ w }}</li>{% endfor %}</ul>
  <b>Nutrition</b><ul>{% for d in p.diet %}<li>{{ d }}</li>{% endfor %}</ul>
 </section>
 {% endfor %}
-<p>Capacity: {{ metrics.capacity_users }} users &middot;
-   Area: {{ metrics.area_sqft }} sq ft &middot;
-   Break-even: {{ metrics.break_even_members }} members</p>
-<p>JSON API: <code>/health</code>, <code>/api/programs</code>,
-   <code>/api/calories</code>, <code>/api/bmi</code>,
-   <code>/api/clients</code> (progress, workouts, metrics, membership,
-   program generator, report), <code>/api/login</code></p>
-</main></body></html>
-"""
+</div>
+
+<h2>JSON API</h2>
+<div class="panel code">/health &middot; /api/programs &middot; /api/calories
+ &middot; /api/bmi &middot; /api/clients &middot; /api/clients/&lt;name&gt;/progress
+ &middot; /workouts &middot; /metrics &middot; /membership &middot;
+ /program/generate &middot; /report &middot; /api/export/clients.csv
+ &middot; /api/login &middot; /api/users</div>
+""" + PAGE_FOOT
+
+CHART_SVG = """<svg viewBox="0 0 {{ c.width }} {{ c.height + 24 }}" width="100%"
+ role="img" aria-label="{{ c.label }}">
+ {% for gy, glabel in c.grid %}
+ <line x1="36" x2="{{ c.width }}" y1="{{ gy }}" y2="{{ gy }}"
+  stroke="#2e2e2e"/><text x="0" y="{{ gy + 4 }}">{{ glabel }}</text>
+ {% endfor %}
+ {% if c.target is not none %}<line x1="36" x2="{{ c.width }}"
+  y1="{{ c.target }}" y2="{{ c.target }}" stroke="#4caf7a"
+  stroke-dasharray="5 4"/>{% endif %}
+ <polyline fill="none" stroke="#d4af37" stroke-width="2.5"
+  points="{{ c.points }}"/>
+ {% for x, y, lbl in c.dots %}<circle cx="{{ x }}" cy="{{ y }}" r="3.5"
+  fill="#d4af37"/><text x="{{ x - 14 }}" y="{{ c.height + 18 }}">{{ lbl
+  }}</text>{% endfor %}
+</svg>"""
+
+CLIENT_HTML = PAGE_HEAD + """
+<p><a href="/">&larr; All clients</a></p>
+<div class="grid cards">
+ <div class="panel">
+  <h3>{{ r.profile.name }}</h3>
+  <div class="muted">{{ r.program }} &middot; age {{ r.profile.age }}</div>
+  <table>
+   <tr><td>Weight</td><td>{{ r.profile.weight_kg }} kg</td></tr>
+   <tr><td>Height</td><td>{{ r.profile.height_cm or "-" }} cm</td></tr>
+   <tr><td>BMI</td><td>{% if r.bmi %}{{ r.bmi.value }}
+    ({{ r.bmi.category }}){% else %}-{% endif %}</td></tr>
+   <tr><td>Calories</td><td>{{ r.profile.calories }} kcal / day</td></tr>
+   <tr><td>Generated plan</td><td>{{ r.profile.plan or "-" }}</td></tr>
+  </table>
+ </div>
+ <div class="panel">
+  <h3>Membership</h3>
+  <span class="badge {{ r.membership.status }}">{{ r.membership.status }}</span>
+  {% if r.membership.end %}<p>Renews {{ r.membership.end }}
+   {% if r.membership.days_remaining is not none
+         and r.membership.days_remaining >= 0 %}
+   <span class="muted">({{ r.membership.days_remaining }} days left)</span>
+   {% endif %}</p>{% endif %}
+  <h3 style="margin-top:14px">Goals</h3>
+  <div>Adherence: {{ r.progress.average_adherence or 0 }}% of
+   {{ r.goals.target_adherence or "-" }}%</div>
+  <div class="bar"><span style="width:{{ adherence_pct }}%"></span></div>
+  <div style="margin-top:10px">Target weight:
+   {{ r.goals.target_weight or "-" }} kg</div>
+ </div>
+ <div class="panel">
+  <h3>Totals</h3>
+  <table>
+   <tr><td>Weeks logged</td><td>{{ r.progress.weeks_logged }}</td></tr>
+   <tr><td>Workouts</td><td>{{ r.workouts.sessions }}</td></tr>
+   <tr><td>Training time</td><td>{{ r.workouts.total_minutes }} min</td></tr>
+   <tr><td>Last metrics</td><td>{% if r.last_metrics %}{{
+    r.last_metrics.date }}{% else %}-{% endif %}</td></tr>
+  </table>
+ </div>
+</div>
+
+<div class="grid cards">
+ <div class="panel"><h3>Weekly adherence (%)</h3>
+  {% if adherence_chart %}{% with c = adherence_chart %}""" + CHART_SVG + """
+  {% endwith %}{% else %}<p class="empty">No weeks logged yet.</p>{% endif %}
+ </div>
+ <div class="panel"><h3>Weight trend (kg)</h3>
+  {% if weight_chart %}{% with c = weight_chart %}""" + CHART_SVG + """
+  {% endwith %}{% else %}<p class="empty">No weight entries yet.</p>{% endif %}
+ </div>
+</div>
+
+<h2>Workouts</h2>
+{% if workouts %}<div class="panel"><table>
+ <tr><th>Date</th><th>Type</th><th>Minutes</th><th>Exercises</th>
+     <th>Notes</th></tr>
+ {% for w in workouts %}<tr><td>{{ w.date }}</td><td>{{ w.workout_type }}</td>
+  <td>{{ w.duration_min }}</td><td>{% for e in w.exercises %}{{ e.name }} {{ e.sets
+   }}x{{ e.reps }}{% if e.weight_kg %} @ {{ e.weight_kg }} kg{%
+   endif %}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+  <td>{{ w.notes }}</td></tr>{% endfor %}
+</table></div>{% else %}<p class="empty">No workouts logged yet.</p>{% endif %}
+
+<h2>Body metrics</h2>
+{% if metrics_rows %}<div class="panel"><table>
+ <tr><th>Date</th><th>Weight</th><th>Waist</th><th>Body fat</th></tr>
+ {% for m in metrics_rows %}<tr><td>{{ m.date }}</td>
+  <td>{{ m.weight_kg or "-" }}</td><td>{{ m.waist_cm or "-" }}</td>
+  <td>{{ m.bodyfat or "-" }}</td></tr>{% endfor %}
+</table></div>{% else %}<p class="empty">No body metrics yet.</p>{% endif %}
+
+<p class="muted code" style="margin-top:24px">JSON:
+ <a href="/api/clients/{{ r.profile.name }}/report">/api/clients/{{
+ r.profile.name }}/report</a></p>
+""" + PAGE_FOOT
 
 
 # --------------------------------------------------------------------------
@@ -373,6 +539,29 @@ def validate_metrics(data):
     return entry
 
 
+def line_chart(labels, values, lo, hi, target=None, width=560, height=160,
+               label="chart"):
+    """Lay out an SVG line chart; returns plot coordinates for the template."""
+    if not values:
+        return None
+    span = (hi - lo) or 1
+    left, step = 44, (width - 60) / max(len(values) - 1, 1)
+
+    def y(v):
+        return round(height - (v - lo) / span * (height - 10), 1)
+
+    dots = [(round(left + i * step, 1), y(v), labels[i])
+            for i, v in enumerate(values)]
+    return {
+        "width": width, "height": height, "label": label,
+        "points": " ".join(f"{x},{yy}" for x, yy, _ in dots),
+        "dots": dots,
+        "grid": [(y(lo + span * f), round(lo + span * f, 1))
+                 for f in (0, 0.5, 1)],
+        "target": y(target) if target is not None else None,
+    }
+
+
 def generate_plan(program_code, rng=None):
     """Pick a training plan for the client's program (v3.x generator)."""
     code, _ = get_program(program_code)
@@ -476,9 +665,68 @@ def create_app(config=None):
     # ---- pages & service endpoints ---------------------------------------
     @app.get("/")
     def index():
+        db = get_db()
+        clients = []
+        for row in db.execute(
+                f"SELECT {CLIENT_COLUMNS} FROM clients ORDER BY name"):
+            c = dict(row)
+            c["bmi"] = (calculate_bmi(c["weight_kg"], c["height_cm"])[0]
+                        if c["height_cm"] else None)
+            c["membership"] = membership_info(c["membership_status"],
+                                              c["membership_end"])
+            clients.append(c)
+        avg = db.execute("SELECT AVG(adherence) FROM progress").fetchone()[0]
+        stats = {
+            "clients": len(clients),
+            "active": sum(c["membership"]["status"] == "Active"
+                          for c in clients),
+            "workouts": db.execute("SELECT COUNT(*) FROM workouts")
+            .fetchone()[0],
+            "adherence": f"{round(avg)}%" if avg is not None else "-",
+        }
         return render_template_string(
-            INDEX_HTML, programs=PROGRAMS, metrics=GYM_METRICS,
-            version=APP_VERSION,
+            INDEX_HTML, title="Dashboard", programs=PROGRAMS,
+            metrics=GYM_METRICS, version=APP_VERSION, clients=clients,
+            stats=stats,
+        )
+
+    @app.get("/clients/<name>")
+    def client_page(name):
+        if find_client(name) is None:
+            return render_template_string(
+                PAGE_HEAD + "<p>Client '{{ name }}' not found. "
+                "<a href='/'>Back to dashboard</a></p>" + PAGE_FOOT,
+                title="Not found", version=APP_VERSION, name=name,
+            ), 404
+        report = build_report(name)
+        db = get_db()
+        progress = db.execute(
+            "SELECT week, adherence FROM progress WHERE client_name = ?"
+            " ORDER BY id", (name,)).fetchall()
+        metrics_rows = [dict(r) for r in db.execute(
+            "SELECT date, weight_kg, waist_cm, bodyfat FROM metrics"
+            " WHERE client_name = ? ORDER BY date, id", (name,))]
+        weights = [m for m in metrics_rows if m["weight_kg"] is not None]
+        target_w = report["goals"]["target_weight"]
+        weight_values = [m["weight_kg"] for m in weights]
+        bounds = weight_values + ([target_w] if target_w else [])
+        target_a = report["goals"]["target_adherence"]
+        avg_a = report["progress"]["average_adherence"] or 0
+        return render_template_string(
+            CLIENT_HTML, title=name, version=APP_VERSION, r=report,
+            workouts=list_workout_rows(name), metrics_rows=metrics_rows,
+            adherence_pct=min(100, round(avg_a / target_a * 100))
+            if target_a else round(avg_a),
+            adherence_chart=line_chart(
+                [p["week"].split(" - ")[0].replace("Week ", "W")
+                 for p in progress],
+                [p["adherence"] for p in progress], 0, 100, target_a,
+                label="weekly adherence"),
+            weight_chart=line_chart(
+                [m["date"][5:] for m in weights], weight_values,
+                min(bounds) - 1 if bounds else 0,
+                max(bounds) + 1 if bounds else 1, target_w,
+                label="weight trend"),
         )
 
     @app.get("/health")
@@ -644,9 +892,7 @@ def create_app(config=None):
         db.commit()
         return jsonify(id=workout_id, client=name, **workout), 201
 
-    @app.get("/api/clients/<name>/workouts")
-    def list_workouts(name):
-        client_or_404(name)
+    def list_workout_rows(name):
         db = get_db()
         workouts = [dict(r) for r in db.execute(
             "SELECT id, date, workout_type, duration_min, notes FROM workouts"
@@ -657,6 +903,12 @@ def create_app(config=None):
                 "SELECT name, sets, reps, weight_kg FROM exercises"
                 " WHERE workout_id = ? ORDER BY id", (workout["id"],)
             )]
+        return workouts
+
+    @app.get("/api/clients/<name>/workouts")
+    def list_workouts(name):
+        client_or_404(name)
+        workouts = list_workout_rows(name)
         return jsonify(client=name, workouts=workouts,
                        total_minutes=sum(w["duration_min"] for w in workouts))
 
@@ -724,7 +976,11 @@ def create_app(config=None):
     # ---- client report (replaces v3.1.2 PDF report) ------------------------
     @app.get("/api/clients/<name>/report")
     def client_report(name):
-        profile = dict(client_or_404(name))
+        client_or_404(name)
+        return jsonify(build_report(name))
+
+    def build_report(name):
+        profile = dict(find_client(name))
         db = get_db()
         weeks, avg = db.execute(
             "SELECT COUNT(*), AVG(adherence) FROM progress"
@@ -743,7 +999,7 @@ def create_app(config=None):
             value, category = calculate_bmi(profile["weight_kg"],
                                             profile["height_cm"])
             bmi = {"value": value, "category": category}
-        return jsonify(
+        return dict(
             profile=profile,
             program=PROGRAMS[profile["program"]]["name"],
             bmi=bmi,
