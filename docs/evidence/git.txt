@@ -1,0 +1,36 @@
+$ git log --oneline --graph -12
+*   0edfe03 Merge branch 'develop' into main
+|\  
+| *   590bad2 Merge branch 'fix/jenkins-docker-guard' into develop
+| |\  
+| | * b9b4688 docs: set repository URLs and note Python 3.9 / lab VM specifics
+| | * bbbdb6a fix(ci): skip Jenkins Docker stage when the daemon is unreachable
+| |/  
+* | 2e64fb0 Merge branch 'develop' for release v1.0.0
+|\| 
+| *   2b74a97 Merge branch 'docs/readme' into develop
+| |\  
+| | * 3034648 docs: add step-by-step VM runbook for Docker and Jenkins
+| | * b41cc49 docs: write README with setup, testing and CI/CD overview
+| |/  
+| *   7a22b61 Merge branch 'ci/github-actions' into develop
+| |\  
+| | * bce2ffd ci: add GitHub Actions workflow for lint, image build and container tests
+| |/  
+| *   a3385d9 Merge branch 'ci/jenkins' into develop
+| |\  
+| | * 50ea09b ci: add Jenkins pipeline for clean build and quality gate
+| |/  
+
+$ git branch -a
+* main
+  remotes/origin/HEAD -> origin/main
+  remotes/origin/ci/github-actions
+  remotes/origin/ci/jenkins
+  remotes/origin/develop
+  remotes/origin/docs/readme
+  remotes/origin/feature/docker
+  remotes/origin/feature/flask-app
+  remotes/origin/feature/pytest-suite
+  remotes/origin/fix/jenkins-docker-guard
+  remotes/origin/main
