@@ -17,7 +17,7 @@ build job and a GitHub Actions pipeline.
 | `legacy/` | The ten baseline ACEest desktop scripts (v1.0 → v3.2.4), unchanged |
 | `requirements.txt` | Runtime dependencies (Flask, gunicorn) |
 | `requirements-dev.txt` | Runtime + test/lint tooling (pytest, pytest-cov, flake8) |
-| `tests/` | Pytest suite: `test_logic.py` (unit), `test_api.py` (HTTP endpoints), `test_features.py` (v2.2.4 – v3.2.4 features) |
+| `tests/` | Pytest suite: `test_logic.py` (unit), `test_api.py` (HTTP endpoints), `test_features.py` (v2.2.4 – v3.2.4 features), `test_ui.py` (web pages) |
 | `Dockerfile` | Multi-stage image: `test` target and non-root `runtime` target |
 | `Jenkinsfile` | Jenkins declarative pipeline (clean build + quality gate) |
 | `.github/workflows/main.yml` | GitHub Actions pipeline |
@@ -43,7 +43,8 @@ program generator, client reports, CSV export and role-based login.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/` | HTML overview page of all programs |
+| GET | `/` | Web dashboard: client list (BMI, plan, membership), totals and programs |
+| GET | `/clients/<name>` | Web page for one client: profile, goals, membership, adherence and weight charts, workouts, body metrics |
 | GET | `/health` | Liveness probe (`{"status": "ok"}`) |
 | GET | `/api/metrics` | Gym capacity, area and break-even figures |
 | GET | `/api/programs` | All programs (`FL`, `MG`, `BG`) |
@@ -221,9 +222,21 @@ CSV export:
 
 ![Report and CSV](docs/screenshots/09b-local-client-report-and-csv.png)
 
-Home page served at `http://127.0.0.1:5000/`:
+Web dashboard at `http://127.0.0.1:5000/`: totals, every client with BMI,
+generated plan and membership status (Active / Paused / Expired), and the
+program catalogue:
 
-![Home page](docs/screenshots/10-flask-home-page.png)
+![Dashboard](docs/screenshots/10-ui-dashboard.png)
+
+Client page `/clients/Ravi`: profile, membership, goals, weekly-adherence and
+weight-trend charts (target shown dashed), workouts with exercises and body
+metrics:
+
+![Client page - Ravi](docs/screenshots/10b-ui-client-ravi.png)
+
+A second client (`/clients/Asha`, Fat Loss program):
+
+![Client page - Asha](docs/screenshots/10c-ui-client-asha.png)
 
 ### 3. GitHub Actions CI/CD
 
