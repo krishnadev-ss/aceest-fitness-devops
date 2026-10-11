@@ -1,0 +1,71 @@
+$ pytest -v --cov=app --cov-report=term-missing
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-8.4.2, pluggy-1.6.0 -- ~/aceest-fitness-devops/.venv/bin/python3
+cachedir: .pytest_cache
+rootdir: ~/aceest-fitness-devops
+configfile: pytest.ini
+testpaths: tests
+plugins: cov-6.3.0
+collecting ... collected 51 items
+
+tests/test_api.py::test_health PASSED                                    [  1%]
+tests/test_api.py::test_index_page_lists_programs PASSED                 [  3%]
+tests/test_api.py::test_metrics PASSED                                   [  5%]
+tests/test_api.py::test_unknown_route_returns_json_404 PASSED            [  7%]
+tests/test_api.py::test_wrong_method_returns_405 PASSED                  [  9%]
+tests/test_api.py::test_list_programs PASSED                             [ 11%]
+tests/test_api.py::test_program_detail PASSED                            [ 13%]
+tests/test_api.py::test_program_detail_not_found PASSED                  [ 15%]
+tests/test_api.py::test_calories_endpoint PASSED                         [ 17%]
+tests/test_api.py::test_calories_rejects_bad_input PASSED                [ 19%]
+tests/test_api.py::test_calories_rejects_non_json_body PASSED            [ 21%]
+tests/test_api.py::test_bmi_endpoint PASSED                              [ 23%]
+tests/test_api.py::test_create_and_fetch_client PASSED                   [ 25%]
+tests/test_api.py::test_list_clients_sorted PASSED                       [ 27%]
+tests/test_api.py::test_duplicate_client_conflict PASSED                 [ 29%]
+tests/test_api.py::test_create_client_validation_error PASSED            [ 31%]
+tests/test_api.py::test_get_missing_client PASSED                        [ 33%]
+tests/test_api.py::test_delete_client PASSED                             [ 35%]
+tests/test_api.py::test_progress_flow PASSED                             [ 37%]
+tests/test_api.py::test_progress_defaults_week_label PASSED              [ 39%]
+tests/test_api.py::test_progress_empty_history PASSED                    [ 41%]
+tests/test_api.py::test_progress_rejects_bad_adherence PASSED            [ 43%]
+tests/test_api.py::test_progress_for_missing_client PASSED               [ 45%]
+tests/test_api.py::test_deleting_client_removes_progress PASSED          [ 47%]
+tests/test_logic.py::test_calculate_calories[FL-70-1540] PASSED          [ 49%]
+tests/test_logic.py::test_calculate_calories[MG-80-2800] PASSED          [ 50%]
+tests/test_logic.py::test_calculate_calories[BG-60.5-1573] PASSED        [ 52%]
+tests/test_logic.py::test_program_lookup_is_case_insensitive PASSED      [ 54%]
+tests/test_logic.py::test_unknown_program_rejected PASSED                [ 56%]
+tests/test_logic.py::test_invalid_weight_rejected[0] PASSED              [ 58%]
+tests/test_logic.py::test_invalid_weight_rejected[-5] PASSED             [ 60%]
+tests/test_logic.py::test_invalid_weight_rejected[70] PASSED             [ 62%]
+tests/test_logic.py::test_invalid_weight_rejected[None] PASSED           [ 64%]
+tests/test_logic.py::test_invalid_weight_rejected[True] PASSED           [ 66%]
+tests/test_logic.py::test_calculate_bmi[50-180-15.4-Underweight] PASSED  [ 68%]
+tests/test_logic.py::test_calculate_bmi[70-175-22.9-Normal] PASSED       [ 70%]
+tests/test_logic.py::test_calculate_bmi[85-175-27.8-Overweight] PASSED   [ 72%]
+tests/test_logic.py::test_calculate_bmi[110-175-35.9-Obese] PASSED       [ 74%]
+tests/test_logic.py::test_bmi_rejects_zero_height PASSED                 [ 76%]
+tests/test_logic.py::test_every_program_is_complete PASSED               [ 78%]
+tests/test_logic.py::test_validate_client_normalises_and_computes_calories PASSED [ 80%]
+tests/test_logic.py::test_validate_client_rejects_bad_fields[patch0] PASSED [ 82%]
+tests/test_logic.py::test_validate_client_rejects_bad_fields[patch1] PASSED [ 84%]
+tests/test_logic.py::test_validate_client_rejects_bad_fields[patch2] PASSED [ 86%]
+tests/test_logic.py::test_validate_client_rejects_bad_fields[patch3] PASSED [ 88%]
+tests/test_logic.py::test_validate_client_rejects_bad_fields[patch4] PASSED [ 90%]
+tests/test_logic.py::test_validate_adherence_rejects_out_of_range[-1] PASSED [ 92%]
+tests/test_logic.py::test_validate_adherence_rejects_out_of_range[101] PASSED [ 94%]
+tests/test_logic.py::test_validate_adherence_rejects_out_of_range[50.5] PASSED [ 96%]
+tests/test_logic.py::test_validate_adherence_rejects_out_of_range[80] PASSED [ 98%]
+tests/test_logic.py::test_validate_adherence_rejects_out_of_range[None] PASSED [100%]
+
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.10.12-final-0 _______________
+
+Name     Stmts   Miss  Cover   Missing
+--------------------------------------
+app.py     165      3    98%   173, 359, 376
+--------------------------------------
+TOTAL      165      3    98%
+============================== 51 passed in 1.11s ==============================

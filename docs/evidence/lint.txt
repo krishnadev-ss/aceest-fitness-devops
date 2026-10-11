@@ -1,0 +1,5 @@
+$ python -m py_compile app.py && echo "compile OK"
+compile OK
+$ flake8 . --count --statistics
+0
+flake8: 0 issues

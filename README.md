@@ -156,3 +156,48 @@ without needing a publicly reachable webhook. Setup steps are in
   merged with `--no-ff` so the history shows each change as a group.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
   (`feat:`, `test:`, `build:`, `ci:`, `docs:`); releases are tagged (`v1.0.0`).
+
+## Execution evidence (screenshots)
+
+All screenshots live in [`docs/screenshots/`](docs/screenshots); the raw
+terminal output behind the local-run screenshots is kept in
+[`docs/evidence/`](docs/evidence).
+
+### 1. Version control (GitHub)
+
+| Repository | Branches |
+|---|---|
+| ![Repository](docs/screenshots/01-github-repository.png) | ![Branches](docs/screenshots/02-github-branches.png) |
+
+| Commit history on `main` | Branch graph (`git log --graph`) |
+|---|---|
+| ![Commits](docs/screenshots/03-github-commit-history.png) | ![Git graph](docs/screenshots/06-git-branch-history.png) |
+
+### 2. Application and unit tests (local run)
+
+Compile check and flake8 — no issues:
+
+![Compile and lint](docs/screenshots/07-local-compile-and-lint.png)
+
+Pytest — **51 passed, 98 % coverage of `app.py`**:
+
+![Pytest](docs/screenshots/08-local-pytest-51-passed.png)
+
+Flask service answering real requests (health, programs, calories, BMI,
+clients, progress and a 404 for an unknown program):
+
+![API calls](docs/screenshots/09-local-flask-api-calls.png)
+
+Home page served at `http://127.0.0.1:5000/`:
+
+![Home page](docs/screenshots/10-flask-home-page.png)
+
+### 3. GitHub Actions CI/CD
+
+Every push triggers the *CI/CD Pipeline* workflow; all runs are green:
+
+![Actions runs](docs/screenshots/04-github-actions-runs.png)
+
+Run on `main`: Build & Lint → Docker Image Assembly → Automated Testing (in container), all successful:
+
+![Pipeline graph](docs/screenshots/05-github-actions-pipeline-success.png)
