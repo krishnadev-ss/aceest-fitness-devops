@@ -208,7 +208,7 @@ Compile check and flake8 — no issues:
 
 ![Compile and lint](docs/screenshots/07-local-compile-and-lint.png)
 
-Pytest — **88 passed, 99 % coverage of `app.py`**:
+Pytest — **95 passed, 99 % coverage of `app.py`**:
 
 ![Pytest](docs/screenshots/08-local-pytest-passed.png)
 
