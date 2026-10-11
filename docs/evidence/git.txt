@@ -1,24 +1,25 @@
-$ git log --oneline --graph --decorate -16
-*   ac5fb79 (HEAD -> main, tag: v2.0.0) Merge branch 'develop' for release v2.0.0
+$ git log --oneline --graph --decorate -14
+*   6c8a58b (HEAD -> main, tag: v2.0.1) Merge branch 'develop' for release v2.0.1
 |\  
-| *   3fcc61d (develop) Merge branch 'feature/v3-feature-parity' into develop
+| *   2cd8dcd (develop) Merge branch 'fix/gunicorn-startup-race' into develop
 | |\  
-| | * 80b62cd (feature/v3-feature-parity) docs: document new endpoints and the baseline version mapping
+| | * 0b4433f (fix/gunicorn-startup-race) fix: let gunicorn workers start concurrently on a fresh database
+| |/  
+* | 04db94d docs: refresh local run evidence for v2.0.0
+* | ac5fb79 (tag: v2.0.0, origin/main, origin/HEAD) Merge branch 'develop' for release v2.0.0
+|\| 
+| *   3fcc61d (origin/develop) Merge branch 'feature/v3-feature-parity' into develop
+| |\  
+| | * 80b62cd (origin/feature/v3-feature-parity, feature/v3-feature-parity) docs: document new endpoints and the baseline version mapping
 | | * c9c16c7 test: cover workouts, metrics, membership, generator, report and login
 | | * 6b4ceb9 feat: port baseline v2.2.4-v3.2.4 features to the API
 | | * d64393a build: keep legacy scripts out of linting and the Docker build context
 | |/  
 | * 4bcc5f0 Merge branch 'chore/legacy-baselines' into develop
 |/| 
-| * 9c7fb86 (tag: baseline-v3.2.4, chore/legacy-baselines) chore(legacy): add baseline ACEest script v3.2.4
+| * 9c7fb86 (tag: baseline-v3.2.4, origin/chore/legacy-baselines, chore/legacy-baselines) chore(legacy): add baseline ACEest script v3.2.4
 | * b1bbdf8 (tag: baseline-v3.1.2) chore(legacy): add baseline ACEest script v3.1.2
 | * d2a2b8c (tag: baseline-v3.0.1) chore(legacy): add baseline ACEest script v3.0.1
-| * fd2c16f (tag: baseline-v2.2.4) chore(legacy): add baseline ACEest script v2.2.4
-| * 9768b07 (tag: baseline-v2.2.1) chore(legacy): add baseline ACEest script v2.2.1
-| * 6d8d391 (tag: baseline-v2.1.2) chore(legacy): add baseline ACEest script v2.1.2
-| * de91138 (tag: baseline-v2.0.1) chore(legacy): add baseline ACEest script v2.0.1
-| * 7177f26 (tag: baseline-v1.1.2) chore(legacy): add baseline ACEest script v1.1.2
-| * 5883bde (tag: baseline-v1.1) chore(legacy): add baseline ACEest script v1.1
 
 $ git tag
-baseline-v1.0 baseline-v1.1 baseline-v1.1.2 baseline-v2.0.1 baseline-v2.1.2 baseline-v2.2.1 baseline-v2.2.4 baseline-v3.0.1 baseline-v3.1.2 baseline-v3.2.4 v1.0.0 v2.0.0 
+baseline-v1.0 baseline-v1.1 baseline-v1.1.2 baseline-v2.0.1 baseline-v2.1.2 baseline-v2.2.1 baseline-v2.2.4 baseline-v3.0.1 baseline-v3.1.2 baseline-v3.2.4 v1.0.0 v2.0.0 v2.0.1 

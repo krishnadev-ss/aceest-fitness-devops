@@ -1,5 +1,5 @@
 $ curl -s http://127.0.0.1:5000/health
-{"service":"aceest-fitness","status":"ok","version":"2.0.0"}
+{"service":"aceest-fitness","status":"ok","version":"2.0.1"}
 
 $ curl -s -X POST http://127.0.0.1:5000/api/clients -H Content-Type:application/json -d '{"name":"Ravi","age":28,"weight_kg":80,"program":"MG","height_cm":178,"target_weight":75,"target_adherence":85}'
 {"age":28,"calories":2800,"height_cm":178.0,"membership_end":null,"membership_status":"Active","name":"Ravi","plan":null,"program":"MG","target_adherence":85,"target_weight":75.0,"weight_kg":80.0}
