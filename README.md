@@ -14,9 +14,10 @@ build job and a GitHub Actions pipeline.
 | Path | Purpose |
 |------|---------|
 | `app.py` | Flask application (app factory, business logic, SQLite storage) |
+| `legacy/` | The ten baseline ACEest desktop scripts (v1.0 → v3.2.4), unchanged |
 | `requirements.txt` | Runtime dependencies (Flask, gunicorn) |
 | `requirements-dev.txt` | Runtime + test/lint tooling (pytest, pytest-cov, flake8) |
-| `tests/` | Pytest suite: `test_logic.py` (unit), `test_api.py` (HTTP endpoints) |
+| `tests/` | Pytest suite: `test_logic.py` (unit), `test_api.py` (HTTP endpoints), `test_features.py` (v2.2.4 – v3.2.4 features) |
 | `Dockerfile` | Multi-stage image: `test` target and non-root `runtime` target |
 | `Jenkinsfile` | Jenkins declarative pipeline (clean build + quality gate) |
 | `.github/workflows/main.yml` | GitHub Actions pipeline |
@@ -24,9 +25,21 @@ build job and a GitHub Actions pipeline.
 
 ## Application overview
 
-The baseline ACEest script was a Tkinter desktop program. Its core logic — the
-three training programs, the calorie formula (`weight_kg × program factor`),
-client records and weekly adherence — is exposed here as a web service.
+The baseline ACEest scripts were Tkinter desktop programs, delivered in ten
+versions (v1.0 → v3.2.4, kept unchanged in [`legacy/`](legacy)). Their logic is
+exposed here as a web service: the three training programs, the calorie formula
+(`weight_kg × program factor`), BMI, client profiles and goals, weekly
+adherence, workout and exercise logging, body metrics, membership tracking, the
+program generator, client reports, CSV export and role-based login.
+
+| Baseline version | Feature | Endpoint(s) |
+|------------------|---------|-------------|
+| v1.0 – v1.1 | Programs, calorie estimate, save client | `/api/programs`, `/api/calories`, `/api/clients` |
+| v1.1.2 | CSV export, progress chart | `/api/export/clients.csv`, `/api/clients/<name>/progress` |
+| v2.0.1 – v2.2.1 | SQLite clients + weekly adherence | `/api/clients/<name>/progress` |
+| v2.2.4 – v3.0.1 | Height / goals, BMI, workouts + exercises, body metrics, weight trend | `PATCH /api/clients/<name>`, `/api/bmi`, `/workouts`, `/metrics` |
+| v3.1.2 | Login with roles, program generator, PDF report | `/api/login`, `/api/users`, `/program/generate`, `/report` |
+| v3.2.4 | Membership status and renewal date | `/api/clients/<name>/membership` |
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -37,12 +50,23 @@ client records and weekly adherence — is exposed here as a web service.
 | GET | `/api/programs/<code>` | One program's workout and diet plan |
 | POST | `/api/calories` | Body `{"weight_kg", "program"}` → daily calorie estimate |
 | POST | `/api/bmi` | Body `{"weight_kg", "height_cm"}` → BMI and category |
-| GET / POST | `/api/clients` | List clients / create one (`name`, `age`, `weight_kg`, `program`) |
-| GET / DELETE | `/api/clients/<name>` | Fetch or remove a client |
+| GET / POST | `/api/clients` | List clients / create one (`name`, `age`, `weight_kg`, `program`; optional `height_cm`, `target_weight`, `target_adherence`, `membership_end`) |
+| GET / PATCH / DELETE | `/api/clients/<name>` | Fetch, update (calories recomputed) or remove a client |
 | GET / POST | `/api/clients/<name>/progress` | Adherence history / log a week (`adherence` 0–100, optional `week`) |
+| GET / POST | `/api/clients/<name>/workouts` | Workout history / log a session (`workout_type` Strength, Hypertrophy, Cardio or Mobility; `duration_min`, `date`, `notes`, `exercises[]` with `name`, `sets`, `reps`, `weight_kg`) |
+| GET / POST | `/api/clients/<name>/metrics` | Body metrics and weight trend / log `weight_kg`, `waist_cm`, `bodyfat` |
+| GET / PUT | `/api/clients/<name>/membership` | Membership status, end date and days remaining / update them |
+| POST | `/api/clients/<name>/program/generate` | Pick a training plan for the client's program (optional `seed`) |
+| GET | `/api/clients/<name>/report` | Full client report (profile, BMI, goals, adherence, workouts, last metrics, membership) |
+| GET | `/api/export/clients.csv` | All clients as CSV |
+| POST | `/api/login` | Check `username` / `password`, returns the role |
+| POST | `/api/users` | Create a user (`role` Admin, Trainer or Member) |
 
 Invalid input returns `400` with `{"error": "..."}`; unknown resources return
-`404`; a duplicate client name returns `409`.
+`404`; a duplicate client or user returns `409`; a failed login returns `401`.
+A default `admin` user is created on first start; its password comes from
+`ACEEST_ADMIN_PASSWORD` (default `admin`, change it outside a lab). Passwords
+are stored as salted hashes. Databases created by v1.0.0 are upgraded in place.
 
 ## Local setup and execution
 
@@ -155,7 +179,11 @@ without needing a publicly reachable webhook. Setup steps are in
 - `feature/*`, `ci/*`, `docs/*` — one short-lived branch per unit of work,
   merged with `--no-ff` so the history shows each change as a group.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
-  (`feat:`, `test:`, `build:`, `ci:`, `docs:`); releases are tagged (`v1.0.0`).
+  (`feat:`, `test:`, `build:`, `ci:`, `docs:`); releases are tagged (`v1.0.0`,
+  `v2.0.0`).
+- Each baseline script was committed into `legacy/` in order and tagged
+  `baseline-v1.0` … `baseline-v3.2.4`, so `git log -- legacy/` shows how the
+  original program evolved.
 
 ## Execution evidence (screenshots)
 
