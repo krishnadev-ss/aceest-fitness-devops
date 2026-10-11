@@ -257,3 +257,13 @@ def test_v1_database_is_upgraded_in_place(tmp_path):
     c = create_app({"TESTING": True, "DATABASE": str(path)}).test_client()
     body = c.get("/api/clients/Old").get_json()
     assert body["membership_status"] == "Active" and body["height_cm"] is None
+
+
+def test_app_starts_twice_on_same_database(tmp_path):
+    """Gunicorn workers each call create_app() on one SQLite file."""
+    config = {"TESTING": True, "DATABASE": str(tmp_path / "shared.db")}
+    create_app(config)
+    second = create_app(config).test_client()
+    assert second.post("/api/login", json={"username": "admin",
+                                           "password": "admin"}
+                       ).status_code == 200

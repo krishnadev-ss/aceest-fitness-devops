@@ -16,7 +16,7 @@ from datetime import date
 from flask import Flask, Response, g, jsonify, render_template_string, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
-APP_VERSION = "2.0.0"
+APP_VERSION = "2.0.1"
 
 # --------------------------------------------------------------------------
 # Domain data (carried over from the baseline ACEest script)
