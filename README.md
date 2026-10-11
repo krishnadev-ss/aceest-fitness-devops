@@ -240,7 +240,8 @@ A second client (`/clients/Asha`, Fat Loss program):
 
 ### 3. GitHub Actions CI/CD
 
-Every push triggers the *CI/CD Pipeline* workflow; all runs are green:
+Every push triggers the *CI/CD Pipeline* workflow; the latest runs on `main`,
+`develop` and the release tags are green:
 
 ![Actions runs](docs/screenshots/04-github-actions-runs.png)
 
@@ -250,7 +251,11 @@ Run on `main`: Build & Lint → Docker Image Assembly → Automated Testing (in 
 
 ### 4. Docker on the lab VM (BITS Prayogshala)
 
-| Image build (126 MB) | Pytest inside the container: 51 passed |
+Latest code (v2.1.0, with the ten baseline scripts in `legacy/`) pulled on the VM:
+
+![git pull](docs/screenshots/14-vm-git-pull.png)
+
+| Image build (126 MB) | Pytest inside the container: 95 passed |
 |---|---|
 | ![Docker build](docs/screenshots/11-vm-docker-build.png) | ![Tests in container](docs/screenshots/12-vm-docker-tests-in-container.png) |
 
@@ -258,16 +263,22 @@ Container running, `/health` OK, status `healthy`, non-root user `aceest`:
 
 ![Container healthy](docs/screenshots/13-vm-docker-run-healthy.png)
 
-Latest code pulled on the VM: ![git pull](docs/screenshots/14-vm-git-pull.png)
+The containerised app serving the web UI on the VM (Firefox, `localhost:5000`):
+
+| Dashboard | Client page with charts |
+|---|---|
+| ![VM dashboard](docs/screenshots/20-vm-ui-dashboard.png) | ![VM client page](docs/screenshots/21-vm-ui-client-ravi.png) |
 
 ### 5. Jenkins BUILD on the lab VM
 
-Pipeline job `aceest-fitness-build`: Pipeline script from SCM, this repository, branch `*/main`, script path `Jenkinsfile`.
+Pipeline job `aceest-fitness-build`: Pipeline script from SCM, this repository,
+branch `*/main`, script path `Jenkinsfile`. Build #1 ran every stage, including
+Docker Build & Test (the `jenkins` user is in the `docker` group):
 
 | Stage view: all stages green | Job page and test trend |
 |---|---|
 | ![Stages](docs/screenshots/15-vm-jenkins-pipeline-stages.png) | ![Job](docs/screenshots/16-vm-jenkins-job-builds.png) |
 
-| Test results: 51 passing | Console: Finished: SUCCESS |
+| Test results: 95 passing | Console: 95 passed in the container, Finished: SUCCESS |
 |---|---|
 | ![Tests](docs/screenshots/17-vm-jenkins-test-results.png) | ![Console](docs/screenshots/19-vm-jenkins-console-success.png) |
