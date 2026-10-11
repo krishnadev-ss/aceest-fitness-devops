@@ -16,7 +16,10 @@ from datetime import date
 from flask import Flask, Response, g, jsonify, render_template_string, request
 from werkzeug.security import check_password_hash, generate_password_hash
 
-APP_VERSION = "2.0.1"
+# PBKDF2 is available in every Python/OpenSSL build (scrypt is not).
+HASH_METHOD = "pbkdf2:sha256"
+
+APP_VERSION = "2.0.2"
 
 # --------------------------------------------------------------------------
 # Domain data (carried over from the baseline ACEest script)
@@ -397,7 +400,7 @@ def create_app(config=None):
 
     def get_db():
         if "db" not in g:
-            g.db = sqlite3.connect(app.config["DATABASE"])
+            g.db = sqlite3.connect(app.config["DATABASE"], timeout=10)
             g.db.row_factory = sqlite3.Row
             g.db.execute("PRAGMA foreign_keys = ON")
         return g.db
@@ -414,13 +417,20 @@ def create_app(config=None):
         existing = {r["name"] for r in db.execute("PRAGMA table_info(clients)")}
         for column, ddl in CLIENT_MIGRATIONS.items():
             if column not in existing:
-                db.execute(f"ALTER TABLE clients ADD COLUMN {column} {ddl}")
+                try:
+                    db.execute(f"ALTER TABLE clients ADD COLUMN {column} {ddl}")
+                except sqlite3.OperationalError as err:
+                    # Another gunicorn worker added it first.
+                    if "duplicate column" not in str(err):  # pragma: no cover
+                        raise
+        # OR IGNORE: several workers may seed the admin user at the same time.
         if db.execute("SELECT 1 FROM users WHERE username = 'admin'").fetchone() \
                 is None:
             db.execute(
-                "INSERT INTO users VALUES ('admin', ?, 'Admin')",
+                "INSERT OR IGNORE INTO users VALUES ('admin', ?, 'Admin')",
                 (generate_password_hash(
-                    os.environ.get("ACEEST_ADMIN_PASSWORD", "admin")),),
+                    os.environ.get("ACEEST_ADMIN_PASSWORD", "admin"),
+                    method=HASH_METHOD),),
             )
         db.commit()
 
@@ -791,7 +801,8 @@ def create_app(config=None):
         db = get_db()
         try:
             db.execute("INSERT INTO users VALUES (?, ?, ?)",
-                       (username, generate_password_hash(password), role))
+                       (username, generate_password_hash(password, method=HASH_METHOD),
+                        role))
             db.commit()
         except sqlite3.IntegrityError:
             return jsonify(error=f"user '{username}' already exists"), 409
