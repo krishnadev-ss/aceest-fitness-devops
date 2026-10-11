@@ -207,14 +207,19 @@ Compile check and flake8 — no issues:
 
 ![Compile and lint](docs/screenshots/07-local-compile-and-lint.png)
 
-Pytest — **51 passed, 98 % coverage of `app.py`**:
+Pytest — **87 passed, 99 % coverage of `app.py`**:
 
-![Pytest](docs/screenshots/08-local-pytest-51-passed.png)
+![Pytest](docs/screenshots/08-local-pytest-passed.png)
 
-Flask service answering real requests (health, programs, calories, BMI,
-clients, progress and a 404 for an unknown program):
+Flask service answering real requests (client with goals, weekly progress,
+workout with exercises, body metrics, membership, program generator, login):
 
 ![API calls](docs/screenshots/09-local-flask-api-calls.png)
+
+Client report (BMI, goals, adherence, workouts, last metrics, membership) and
+CSV export:
+
+![Report and CSV](docs/screenshots/09b-local-client-report-and-csv.png)
 
 Home page served at `http://127.0.0.1:5000/`:
 

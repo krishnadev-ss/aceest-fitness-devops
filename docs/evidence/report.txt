@@ -1,0 +1,7 @@
+$ curl -s http://127.0.0.1:5000/api/clients/Ravi/report
+{"bmi":{"category":"Overweight","value":25.2},"goals":{"target_adherence":85,"target_weight":75.0},"last_metrics":{"bodyfat":18.0,"date":"2026-10-11","waist_cm":84.0,"weight_kg":79.5},"membership":{"days_remaining":171,"end":"2027-03-31","status":"Active"},"profile":{"age":28,"calories":2800,"height_cm":178.0,"membership_end":"2027-03-31","membership_status":"Active","name":"Ravi","plan":"Upper/Lower Split","program":"MG","target_adherence":85,"target_weight":75.0,"weight_kg":80.0},"program":"Muscle Gain","progress":{"average_adherence":85.0,"weeks_logged":1},"workouts":{"sessions":1,"total_minutes":50}}
+
+$ curl -s http://127.0.0.1:5000/api/export/clients.csv
+name,age,weight_kg,program,calories,height_cm,target_weight,target_adherence,plan,membership_status,membership_end
+Ravi,28,80.0,MG,2800,178.0,75.0,85,Upper/Lower Split,Active,2027-03-31
+

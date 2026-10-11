@@ -1,24 +1,24 @@
-$ python app.py &   # Flask dev server on :5000
 $ curl -s http://127.0.0.1:5000/health
-{"service":"aceest-fitness","status":"ok","version":"1.0.0"}
+{"service":"aceest-fitness","status":"ok","version":"2.0.0"}
 
-$ curl -s http://127.0.0.1:5000/api/programs/MG
-{"calorie_factor":35,"code":"MG","diet":["Breakfast: Eggs + Peanut Butter Oats","Lunch: Chicken Biryani","Dinner: Mutton Curry + Rice","Target: ~3200 kcal"],"name":"Muscle Gain","workout":["Mon: Squat 5x5","Tue: Bench 5x5","Wed: Deadlift 4x6","Thu: Front Squat 4x8","Fri: Incline Press 4x10","Sat: Barbell Rows 4x10"]}
+$ curl -s -X POST http://127.0.0.1:5000/api/clients -H Content-Type:application/json -d '{"name":"Ravi","age":28,"weight_kg":80,"program":"MG","height_cm":178,"target_weight":75,"target_adherence":85}'
+{"age":28,"calories":2800,"height_cm":178.0,"membership_end":null,"membership_status":"Active","name":"Ravi","plan":null,"program":"MG","target_adherence":85,"target_weight":75.0,"weight_kg":80.0}
 
-$ curl -s -X POST http://127.0.0.1:5000/api/calories -H "Content-Type: application/json" -d '{"weight_kg":80,"program":"FL"}'
-{"calories":1760,"program":"FL","weight_kg":80}
-
-$ curl -s -X POST http://127.0.0.1:5000/api/bmi -H "Content-Type: application/json" -d '{"weight_kg":80,"height_cm":178}'
-{"bmi":25.2,"category":"Overweight"}
-
-$ curl -s -X POST http://127.0.0.1:5000/api/clients -H "Content-Type: application/json" -d '{"name":"Ravi","age":28,"weight_kg":80,"program":"MG"}'
-{"age":28,"calories":2800,"name":"Ravi","program":"MG","weight_kg":80.0}
-
-$ curl -s -X POST http://127.0.0.1:5000/api/clients/Ravi/progress -H "Content-Type: application/json" -d '{"adherence":85}'
+$ curl -s -X POST http://127.0.0.1:5000/api/clients/Ravi/progress -H Content-Type:application/json -d '{"adherence":85}'
 {"adherence":85,"client":"Ravi","week":"Week 41 - 2026"}
 
-$ curl -s http://127.0.0.1:5000/api/clients
-[{"age":28,"calories":2800,"name":"Ravi","program":"MG","weight_kg":80.0}]
+$ curl -s -X POST http://127.0.0.1:5000/api/clients/Ravi/workouts -H Content-Type:application/json -d '{"workout_type":"Strength","duration_min":50,"exercises":[{"name":"Squat","sets":5,"reps":5,"weight_kg":100}]}'
+{"client":"Ravi","date":"2026-10-11","duration_min":50,"exercises":[{"name":"Squat","reps":5,"sets":5,"weight_kg":100.0}],"id":1,"notes":"","workout_type":"Strength"}
 
-$ curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:5000/api/programs/XX
-404
+$ curl -s -X POST http://127.0.0.1:5000/api/clients/Ravi/metrics -H Content-Type:application/json -d '{"weight_kg":79.5,"waist_cm":84,"bodyfat":18}'
+{"bodyfat":18.0,"client":"Ravi","date":"2026-10-11","waist_cm":84.0,"weight_kg":79.5}
+
+$ curl -s -X PUT http://127.0.0.1:5000/api/clients/Ravi/membership -H Content-Type:application/json -d '{"status":"Active","end":"2027-03-31"}'
+{"client":"Ravi","days_remaining":171,"end":"2027-03-31","status":"Active"}
+
+$ curl -s -X POST http://127.0.0.1:5000/api/clients/Ravi/program/generate -H Content-Type:application/json -d '{"seed":7}'
+{"client":"Ravi","plan":"Upper/Lower Split","program":"MG"}
+
+$ curl -s -X POST http://127.0.0.1:5000/api/login -H Content-Type:application/json -d '{"username":"admin","password":"admin"}'
+{"role":"Admin","username":"admin"}
+
