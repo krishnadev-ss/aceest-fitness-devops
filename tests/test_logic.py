@@ -56,7 +56,10 @@ def test_validate_client_normalises_and_computes_calories():
         {"name": "  Asha ", "age": 30, "weight_kg": 60, "program": "fl"}
     )
     assert result == {"name": "Asha", "age": 30, "weight_kg": 60.0,
-                      "program": "FL", "calories": 1320}
+                      "program": "FL", "calories": 1320,
+                      "height_cm": None, "target_weight": None,
+                      "target_adherence": None, "membership_status": "Active",
+                      "membership_end": None}
 
 
 @pytest.mark.parametrize("patch", [
