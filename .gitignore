@@ -10,3 +10,6 @@ reports/
 .DS_Store
 .idea/
 .vscode/
+.scannerwork/
+.sonar/
+dist/
