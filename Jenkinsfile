@@ -7,6 +7,8 @@
 //
 // Jenkins credentials used (Manage Jenkins -> Credentials):
 //   dockerhub-creds   Username with password   Docker Hub user + access token
+//                     (optional: without it the agent's own `docker login` and
+//                      the DOCKERHUB_USER parameter are used)
 //   sonarqube-token   Secret text              SonarQube user token
 // The agent needs docker, kubectl (with a kubeconfig for the cluster) and
 // python3. Stages whose tools/credentials are missing are skipped, not failed.
@@ -33,6 +35,8 @@ pipeline {
                description: 'After a healthy canary, promote it to the stable pods')
         string(name: 'SONAR_HOST_URL', defaultValue: 'http://localhost:9000',
                description: 'SonarQube server')
+        string(name: 'DOCKERHUB_USER', defaultValue: 'krishnadevss',
+               description: 'Docker Hub account (used when the agent is already docker-logged-in)')
     }
 
     environment {
@@ -161,26 +165,21 @@ pipeline {
         }
 
         stage('Push to Docker Hub') {
-            when { expression { dockerOk() && hasCredential('dockerhub-creds') } }
+            when { expression { dockerOk() && (hasCredential('dockerhub-creds') || dockerLoggedIn()) } }
             steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
-                        usernameVariable: 'DH_USER', passwordVariable: 'DH_TOKEN')]) {
-                    sh '''
-                        echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin
-                        REPO="docker.io/$DH_USER/$IMAGE_NAME"
-                        for t in "$BUILD_TAG_IMG" "$APP_VERSION" "$GIT_SHORT" latest; do
-                            docker tag "$IMAGE_NAME:$BUILD_TAG_IMG" "$REPO:$t"
-                            docker push -q "$REPO:$t"
-                        done
-                        for t in "$BUILD_TAG_IMG-test" "$APP_VERSION-test" latest-test; do
-                            docker tag "$IMAGE_NAME:$BUILD_TAG_IMG-test" "$REPO:$t"
-                            docker push -q "$REPO:$t"
-                        done
-                        docker logout
-                        echo "$REPO" > reports/image-repo.txt
-                    '''
+                script {
+                    if (hasCredential('dockerhub-creds')) {
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
+                                usernameVariable: 'DH_USER', passwordVariable: 'DH_TOKEN')]) {
+                            sh 'echo "$DH_TOKEN" | docker login -u "$DH_USER" --password-stdin'
+                            pushImages(env.DH_USER)
+                        }
+                    } else {
+                        // The agent's Docker client is already signed in (docker login).
+                        pushImages(params.DOCKERHUB_USER)
+                    }
+                    env.IMAGE_REPO = readFile('reports/image-repo.txt').trim()
                 }
-                script { env.IMAGE_REPO = readFile('reports/image-repo.txt').trim() }
             }
         }
 
@@ -240,6 +239,28 @@ EOF
 // --- helpers -----------------------------------------------------------------
 def dockerOk() {
     return sh(script: 'docker info > /dev/null 2>&1', returnStatus: true) == 0
+}
+
+def dockerLoggedIn() {
+    return sh(script: 'grep -q index.docker.io "$HOME/.docker/config.json" 2>/dev/null',
+              returnStatus: true) == 0
+}
+
+def pushImages(String user) {
+    withEnv(["DH_USER=${user}"]) {
+        sh '''
+            REPO="docker.io/$DH_USER/$IMAGE_NAME"
+            for t in "$BUILD_TAG_IMG" "$APP_VERSION" "$GIT_SHORT" latest; do
+                docker tag "$IMAGE_NAME:$BUILD_TAG_IMG" "$REPO:$t"
+                docker push -q "$REPO:$t"
+            done
+            for t in "$BUILD_TAG_IMG-test" "$APP_VERSION-test" latest-test; do
+                docker tag "$IMAGE_NAME:$BUILD_TAG_IMG-test" "$REPO:$t"
+                docker push -q "$REPO:$t"
+            done
+            mkdir -p reports && echo "$REPO" > reports/image-repo.txt
+        '''
+    }
 }
 
 def hasCredential(String id) {
