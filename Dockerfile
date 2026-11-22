@@ -8,6 +8,13 @@ ARG PYTHON_VERSION=3.12
 # ---------- base ----------------------------------------------------------
 FROM python:${PYTHON_VERSION}-slim AS base
 
+ARG APP_VERSION=3.0.0
+ARG GIT_COMMIT=unknown
+LABEL org.opencontainers.image.title="aceest-fitness" \
+      org.opencontainers.image.version="${APP_VERSION}" \
+      org.opencontainers.image.revision="${GIT_COMMIT}" \
+      org.opencontainers.image.source="https://github.com/krishnadev-ss/aceest-fitness-devops"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
@@ -33,6 +40,7 @@ FROM base AS test
 COPY requirements-dev.txt pytest.ini .flake8 ./
 RUN pip install -r requirements-dev.txt
 COPY tests ./tests
+COPY smoke ./smoke
 
 USER aceest
 CMD ["pytest", "-v", "-p", "no:cacheprovider"]
@@ -47,4 +55,7 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD ["python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/health', timeout=2).status == 200 else 1)"]
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "app:create_app()"]
+# Access log on stdout: `kubectl logs` shows the traffic each pod receives
+# (used to prove the shadow deployment gets mirrored requests).
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", \
+     "--access-logfile", "-", "app:create_app()"]

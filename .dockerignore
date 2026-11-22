@@ -13,3 +13,9 @@ Jenkinsfile
 README.md
 legacy
 docs
+k8s
+scripts
+sonar-project.properties
+.scannerwork
+.sonar
+dist
