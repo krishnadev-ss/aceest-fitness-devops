@@ -36,7 +36,7 @@ build() {   # context target tag [extra tag]
     else
         docker build "${args[@]}" "$ctx"
         docker push "${REPO}:${tag}"
-        [ -n "$extra" ] && docker push "${REPO}:${extra}"
+        if [ -n "$extra" ]; then docker push "${REPO}:${extra}"; fi
     fi
 }
 
