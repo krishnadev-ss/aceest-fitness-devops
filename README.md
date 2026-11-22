@@ -7,7 +7,25 @@ and BMI calculators, client records and weekly adherence tracking), delivered
 with a complete DevOps workflow: Git branching, Pytest, Docker, a Jenkins
 build job and a GitHub Actions pipeline.
 
-*Introduction to DevOps (CSIZG514 / SEZG514) — Assignment 1.*
+*Introduction to DevOps (CSIZG514 / SEZG514) — Assignment 1 and Assignment 2.*
+
+## Assignment 2 — full CI/CD to Kubernetes (v3.0.0)
+
+Jenkins now runs lint → unit tests → **SonarQube quality gate** → Docker build →
+tests inside the container → **push to Docker Hub** → **deploy to Kubernetes
+(Minikube)** with five strategies — rolling update, blue-green, canary, A/B
+testing and shadow — each verified by an in-cluster Pytest smoke Job and rolled
+back automatically when a check fails.
+
+| Path | Purpose |
+|------|---------|
+| `Jenkinsfile` | Full CI/CD pipeline (10 stages) |
+| `k8s/` | Manifests: `rolling/`, `blue-green/`, `canary/`, `ab-testing/`, `shadow/`, `smoke-job.yaml` |
+| `scripts/k8s.sh` | Deploy / promote / roll back each strategy, smoke tests, URLs |
+| `scripts/publish-all-versions.sh` | Build and push every tagged version to Docker Hub |
+| `sonar-project.properties` | SonarQube analysis + quality gate settings |
+| `smoke/` | Post-deployment Pytest suite (runs against a live URL) |
+| `docs/ASSIGNMENT2.md` | Architecture, VM setup, credentials, how to try each strategy |
 
 ## Contents
 
