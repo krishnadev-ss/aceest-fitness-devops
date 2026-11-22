@@ -119,10 +119,10 @@ pipeline {
                     sh '''
                         curl -sf -u "$SONAR_TOKEN:" \
                           "$SONAR_HOST_URL/api/qualitygates/project_status?projectKey=aceest-fitness" \
-                          -o reports/sonarqube-quality-gate.json
+                          -o reports/sonarqube-quality-gate.json || echo "gate status not available"
                         curl -sf -u "$SONAR_TOKEN:" \
-                          "$SONAR_HOST_URL/api/measures/component?component=aceest-fitness&metricKeys=bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density,ncloc,security_hotspots,sqale_rating,reliability_rating,security_rating" \
-                          -o reports/sonarqube-measures.json
+                          "$SONAR_HOST_URL/api/measures/component?component=aceest-fitness&metricKeys=bugs,vulnerabilities,code_smells,coverage,duplicated_lines_density,ncloc,sqale_rating,reliability_rating,security_rating" \
+                          -o reports/sonarqube-measures.json || echo "measures not available"
                         cat reports/sonarqube-quality-gate.json; echo
                     '''
                 }
