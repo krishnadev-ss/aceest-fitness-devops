@@ -1,0 +1,28 @@
+# In-cluster smoke test: runs the Pytest 'smoke' suite from the test image
+# against a Service. scripts/k8s.sh fills in the placeholders.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: __JOB_NAME__
+  namespace: aceest
+  labels: {app: aceest-smoke, app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 3600
+  activeDeadlineSeconds: 180
+  template:
+    metadata:
+      labels: {app: aceest-smoke}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: smoke
+          image: __SMOKE_IMAGE__
+          imagePullPolicy: IfNotPresent
+          command: ["pytest", "smoke", "-v", "-p", "no:cacheprovider"]
+          env:
+            - {name: BASE_URL, value: "__BASE_URL__"}
+            - {name: EXPECTED_VERSION, value: "__EXPECTED_VERSION__"}
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {cpu: 500m, memory: 256Mi}

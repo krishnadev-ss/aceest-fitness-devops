@@ -1,0 +1,121 @@
+# A/B testing: variant A (current release) and variant B (new release) behind
+# an NGINX router (NodePort 30083). Header 'X-Variant: a|b' or cookie
+# 'variant=a|b' pins a user; otherwise users are split 50/50 by a hash of
+# client address + user agent and the choice is stored in a cookie.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-variant-a
+  namespace: aceest
+  labels: {app: aceest-ab, track: variant-a, app.kubernetes.io/part-of: aceest-fitness}
+  annotations:
+    kubernetes.io/change-cause: "initial deploy of __STABLE_TAG__"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  minReadySeconds: 5
+  selector:
+    matchLabels: {app: aceest-ab, track: variant-a}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: aceest-ab, track: variant-a, app.kubernetes.io/part-of: aceest-fitness}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+      containers:
+        - name: aceest
+          image: __IMAGE_REPO__:__STABLE_TAG__
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 5000}]
+          env:
+            - {name: DEPLOY_TRACK, value: "variant-a"}
+            - {name: ACEEST_DB, value: /app/data/aceest_fitness.db}
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts: [{name: data, mountPath: /app/data}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-variant-b
+  namespace: aceest
+  labels: {app: aceest-ab, track: variant-b, app.kubernetes.io/part-of: aceest-fitness}
+  annotations:
+    kubernetes.io/change-cause: "initial deploy of __NEW_TAG__"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  minReadySeconds: 5
+  selector:
+    matchLabels: {app: aceest-ab, track: variant-b}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: aceest-ab, track: variant-b, app.kubernetes.io/part-of: aceest-fitness}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+      containers:
+        - name: aceest
+          image: __IMAGE_REPO__:__NEW_TAG__
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 5000}]
+          env:
+            - {name: DEPLOY_TRACK, value: "variant-b"}
+            - {name: ACEEST_DB, value: /app/data/aceest_fitness.db}
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts: [{name: data, mountPath: /app/data}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-variant-a
+  namespace: aceest
+  labels: {app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  type: ClusterIP
+  selector: {app: aceest-ab, track: variant-a}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-variant-b
+  namespace: aceest
+  labels: {app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  type: ClusterIP
+  selector: {app: aceest-ab, track: variant-b}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000

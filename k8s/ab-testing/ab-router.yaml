@@ -1,0 +1,89 @@
+# NGINX router for A/B testing (NodePort 30083).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aceest-ab-router-conf
+  namespace: aceest
+data:
+  default.conf: |
+    upstream variant_a { server aceest-variant-a.aceest.svc.cluster.local:80; }
+    upstream variant_b { server aceest-variant-b.aceest.svc.cluster.local:80; }
+
+    # 1) explicit header, 2) sticky cookie, 3) 50/50 hash of the client.
+    map $http_x_variant $from_header { default ""; ~*^a$ a; ~*^b$ b; }
+    map $cookie_variant $from_cookie { default ""; a a; b b; }
+    split_clients "${remote_addr}${http_user_agent}" $from_hash {
+        50% a;
+        *   b;
+    }
+    map "$from_header:$from_cookie" $variant {
+        ~^a:   a;
+        ~^b:   b;
+        ~^:a$  a;
+        ~^:b$  b;
+        default $from_hash;
+    }
+
+    server {
+        listen 8080;
+        location = /router-health { access_log off; return 200 "ok\n"; }
+        location / {
+            proxy_pass http://variant_$variant;
+            proxy_set_header Host $host;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            add_header X-AB-Variant $variant always;
+            add_header Set-Cookie "variant=$variant; Path=/; Max-Age=86400" always;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-ab-router
+  namespace: aceest
+  labels: {app: aceest-ab-router, app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: aceest-ab-router}
+  template:
+    metadata:
+      labels: {app: aceest-ab-router, app.kubernetes.io/part-of: aceest-fitness}
+      annotations:
+        # Changing the config rolls the router.
+        aceest/config-version: "1"
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports: [{name: http, containerPort: 8080}]
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 64Mi}
+          readinessProbe:
+            httpGet: {path: /router-health, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /router-health, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - {name: conf, mountPath: /etc/nginx/conf.d}
+      volumes:
+        - name: conf
+          configMap: {name: aceest-ab-router-conf}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-ab-router
+  namespace: aceest
+  labels: {app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  type: NodePort
+  selector: {app: aceest-ab-router}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      nodePort: 30083

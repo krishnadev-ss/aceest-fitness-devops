@@ -1,0 +1,85 @@
+# NGINX router for shadow deployment (NodePort 30084).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aceest-shadow-router-conf
+  namespace: aceest
+data:
+  default.conf: |
+    upstream live   { server aceest-live.aceest.svc.cluster.local:80; }
+    upstream shadow { server aceest-shadow.aceest.svc.cluster.local:80; }
+
+    server {
+        listen 8080;
+        location = /router-health { access_log off; return 200 "ok\n"; }
+
+        location / {
+            # Every request is copied to the shadow; only live answers users.
+            mirror /__shadow;
+            mirror_request_body on;
+            proxy_pass http://live;
+            proxy_set_header Host $host;
+            add_header X-Shadowed "true" always;
+        }
+
+        location = /__shadow {
+            internal;
+            proxy_pass http://shadow$request_uri;
+            proxy_set_header Host $host;
+            proxy_set_header X-Shadow-Request "true";
+            proxy_connect_timeout 1s;
+            proxy_read_timeout 3s;
+        }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-shadow-router
+  namespace: aceest
+  labels: {app: aceest-shadow-router, app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: aceest-shadow-router}
+  template:
+    metadata:
+      labels: {app: aceest-shadow-router, app.kubernetes.io/part-of: aceest-fitness}
+      annotations:
+        # Changing the config rolls the router.
+        aceest/config-version: "1"
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports: [{name: http, containerPort: 8080}]
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {cpu: 200m, memory: 64Mi}
+          readinessProbe:
+            httpGet: {path: /router-health, port: http}
+            periodSeconds: 5
+          livenessProbe:
+            httpGet: {path: /router-health, port: http}
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          volumeMounts:
+            - {name: conf, mountPath: /etc/nginx/conf.d}
+      volumes:
+        - name: conf
+          configMap: {name: aceest-shadow-router-conf}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-shadow-router
+  namespace: aceest
+  labels: {app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  type: NodePort
+  selector: {app: aceest-shadow-router}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      nodePort: 30084
