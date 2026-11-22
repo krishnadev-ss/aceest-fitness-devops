@@ -1,0 +1,5 @@
+[run]
+source = app
+# Relative paths so SonarQube (running in another directory or container)
+# can map coverage.xml back to the sources.
+relative_files = True

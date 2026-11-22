@@ -1,0 +1,62 @@
+# Rolling update: pods are replaced one at a time (maxSurge 1,
+# maxUnavailable 0); readiness probes gate each step; 'kubectl rollout undo'
+# returns to the previous ReplicaSet. NodePort 30080.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aceest-rolling
+  namespace: aceest
+  labels: {app: aceest-rolling, track: stable, app.kubernetes.io/part-of: aceest-fitness}
+  annotations:
+    kubernetes.io/change-cause: "initial deploy of __STABLE_TAG__"
+spec:
+  replicas: 3
+  revisionHistoryLimit: 10
+  minReadySeconds: 5
+  selector:
+    matchLabels: {app: aceest-rolling, track: stable}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate: {maxSurge: 1, maxUnavailable: 0}
+  template:
+    metadata:
+      labels: {app: aceest-rolling, track: stable, app.kubernetes.io/part-of: aceest-fitness}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 10001, fsGroup: 10001}
+      containers:
+        - name: aceest
+          image: __IMAGE_REPO__:__STABLE_TAG__
+          imagePullPolicy: IfNotPresent
+          ports: [{name: http, containerPort: 5000}]
+          env:
+            - {name: DEPLOY_TRACK, value: "stable"}
+            - {name: ACEEST_DB, value: /app/data/aceest_fitness.db}
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {cpu: 500m, memory: 256Mi}
+          readinessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet: {path: /health, port: http}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts: [{name: data, mountPath: /app/data}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aceest-rolling
+  namespace: aceest
+  labels: {app.kubernetes.io/part-of: aceest-fitness}
+spec:
+  type: NodePort
+  selector: {app: aceest-rolling}
+  ports:
+    - name: http
+      port: 80
+      targetPort: 5000
+      nodePort: 30080

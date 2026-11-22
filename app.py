@@ -10,6 +10,7 @@ import csv
 import io
 import os
 import random
+import socket
 import sqlite3
 from datetime import date
 
@@ -19,7 +20,11 @@ from werkzeug.security import check_password_hash, generate_password_hash
 # PBKDF2 is available in every Python/OpenSSL build (scrypt is not).
 HASH_METHOD = "pbkdf2:sha256"
 
-APP_VERSION = "2.1.0"
+APP_VERSION = "3.0.0"
+
+# Which deployment slot this pod belongs to (blue, green, stable, canary,
+# variant-a, shadow ...). Set by the Kubernetes manifests; "local" otherwise.
+DEFAULT_TRACK = "local"
 
 # --------------------------------------------------------------------------
 # Domain data (carried over from the baseline ACEest script)
@@ -202,9 +207,10 @@ PAGE_HEAD = """<!doctype html>
  svg text{fill:var(--muted);font-size:11px}
  .empty{color:var(--muted);font-style:italic}
 </style></head><body>
-<header><h1>ACEest Functional Fitness</h1><small>v{{ version }}</small>
+<header><h1>ACEest Functional Fitness</h1><small>v{{ version }}
+ &middot; {{ deploy_track() }}</small>
 <nav><a href="/">Dashboard</a><a href="/api/export/clients.csv">Export CSV</a>
-<a href="/health">Health</a></nav></header>
+<a href="/health">Health</a><a href="/version">Version</a></nav></header>
 <main>
 """
 
@@ -585,7 +591,13 @@ def membership_info(status, end, today=None):
 def create_app(config=None):
     app = Flask(__name__)
     app.config["DATABASE"] = os.environ.get("ACEEST_DB", "aceest_fitness.db")
+    app.config["DEPLOY_TRACK"] = os.environ.get("DEPLOY_TRACK", DEFAULT_TRACK)
     app.config.update(config or {})
+
+    def deploy_track():
+        return app.config["DEPLOY_TRACK"]
+
+    app.jinja_env.globals["deploy_track"] = deploy_track
 
     def get_db():
         if "db" not in g:
@@ -729,10 +741,33 @@ def create_app(config=None):
                 label="weight trend"),
         )
 
+    # ---- release identification (used by the deployment strategies) -----
+    @app.after_request
+    def tag_response(response):
+        response.headers["X-App-Version"] = APP_VERSION
+        response.headers["X-Deploy-Track"] = deploy_track()
+        response.headers["X-Served-By"] = socket.gethostname()
+        return response
+
     @app.get("/health")
     def health():
+        """Liveness: the process is up."""
         return jsonify(status="ok", service="aceest-fitness",
-                       version=APP_VERSION)
+                       version=APP_VERSION, track=deploy_track())
+
+    @app.get("/ready")
+    def ready():
+        """Readiness: the database answers, so the pod can take traffic."""
+        try:
+            get_db().execute("SELECT 1").fetchone()
+        except sqlite3.Error as err:
+            return jsonify(status="unavailable", error=str(err)), 503
+        return jsonify(status="ready", version=APP_VERSION)
+
+    @app.get("/version")
+    def version():
+        return jsonify(service="aceest-fitness", version=APP_VERSION,
+                       track=deploy_track(), host=socket.gethostname())
 
     @app.get("/api/metrics")
     def metrics():
